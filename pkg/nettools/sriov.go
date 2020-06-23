@@ -49,6 +49,11 @@ import (
 	"github.com/Mirantis/virtlet/pkg/utils"
 )
 
+const (
+	hostVFDriverEnv = "VIRTLET_HOST_VF_DRIVER"
+	defaultHostVFDriver = "i40evf"
+)
+
 // verify if device is pci virtual function (in the same way as does
 // that libvirt (src/util/virpci.c:virPCIIsVirtualFunction)
 func isSriovVf(link netlink.Link) bool {
@@ -118,6 +123,24 @@ func getDeviceIdentifier(pciAddress string) (string, error) {
 }
 
 func rebindDriverToDevice(pciAddress string) error {
+	defer ioutil.WriteFile(
+		filepath.Join("/sys/bus/pci/devices", pciAddress, "driver_override"),
+		[]byte(""),
+		0644,
+	)
+
+	hostVFDriver := os.Getenv(hostVFDriverEnv)
+	if hostVFDriver == "" {
+		hostVFDriver = defaultHostVFDriver
+	}
+	if err := ioutil.WriteFile(
+		filepath.Join("/sys/bus/pci/devices", pciAddress, "driver_override"),
+		[]byte(hostVFDriver),
+		0644,
+	); err != nil {
+		return err
+	}
+
 	return ioutil.WriteFile(
 		"/sys/bus/pci/drivers_probe",
 		[]byte(pciAddress),
