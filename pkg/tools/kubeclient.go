@@ -18,6 +18,7 @@ package tools
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -256,7 +257,7 @@ func (c *RealKubeClient) GetNamesOfNodesMarkedForVirtlet() ([]string, error) {
 	opts := meta_v1.ListOptions{
 		LabelSelector: "extraRuntime=virtlet",
 	}
-	nodes, err := c.client.CoreV1().Nodes().List(opts)
+	nodes, err := c.client.CoreV1().Nodes().List(context.TODO(), opts)
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +279,7 @@ func (c *RealKubeClient) getVirtletPodAndNodeNames(nodeName string) (podNames []
 	if nodeName != "" {
 		opts.FieldSelector = "spec.nodeName=" + nodeName
 	}
-	pods, err := c.client.CoreV1().Pods("kube-system").List(opts)
+	pods, err := c.client.CoreV1().Pods("kube-system").List(context.TODO(), opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -294,7 +295,7 @@ func (c *RealKubeClient) getVMPod(podName string) (*v1.Pod, error) {
 	if err := c.setup(); err != nil {
 		return nil, err
 	}
-	pod, err := c.client.CoreV1().Pods(c.namespace).Get(podName, meta_v1.GetOptions{})
+	pod, err := c.client.CoreV1().Pods(c.namespace).Get(context.TODO(), podName, meta_v1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -362,17 +363,17 @@ func (c *RealKubeClient) CreatePod(pod *v1.Pod) (*v1.Pod, error) {
 	if err := c.setup(); err != nil {
 		return nil, err
 	}
-	return c.client.CoreV1().Pods(pod.Namespace).Create(pod)
+	return c.client.CoreV1().Pods(pod.Namespace).Create(context.TODO(), pod, meta_v1.CreateOptions{})
 }
 
 // GetPod implements GetPod method of KubeClient interface.
 func (c *RealKubeClient) GetPod(name, namespace string) (*v1.Pod, error) {
-	return c.client.CoreV1().Pods(namespace).Get(name, meta_v1.GetOptions{})
+	return c.client.CoreV1().Pods(namespace).Get(context.TODO(), name, meta_v1.GetOptions{})
 }
 
 // DeletePod implements DeletePod method of KubeClient interface.
 func (c *RealKubeClient) DeletePod(name, namespace string) error {
-	return c.client.CoreV1().Pods(namespace).Delete(name, &meta_v1.DeleteOptions{})
+	return c.client.CoreV1().Pods(namespace).Delete(context.TODO(), name, meta_v1.DeleteOptions{})
 }
 
 // ExecInContainer implements ExecInContainer method of KubeClient interface.
@@ -427,7 +428,7 @@ func (c *RealKubeClient) ForwardPorts(podName, namespace string, ports []*Forwar
 		namespace = c.namespace
 	}
 
-	pod, err := c.client.CoreV1().Pods(namespace).Get(podName, meta_v1.GetOptions{})
+	pod, err := c.client.CoreV1().Pods(namespace).Get(context.TODO(), podName, meta_v1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -488,5 +489,5 @@ func (c *RealKubeClient) PodLogs(podName, containerName, namespace string, tailL
 	if tailLines != 0 {
 		opts.TailLines = &tailLines
 	}
-	return c.client.CoreV1().Pods(namespace).GetLogs(podName, opts).Do().Raw()
+	return c.client.CoreV1().Pods(namespace).GetLogs(podName, opts).Do(context.TODO()).Raw()
 }

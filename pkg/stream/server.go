@@ -53,7 +53,7 @@ func NewServer(socketPath string, metadataStore metadata.Store, iStreamPort int)
 	// Prepare unix server
 	s.unixServer = NewUnixServer(socketPath)
 
-	bindAddress, err := knet.ChooseBindAddress(net.IP{0, 0, 0, 0})
+	bindAddress, err := knet.ResolveBindAddress(net.IP{0, 0, 0, 0})
 	if err != nil {
 		return nil, err
 	}

@@ -43,7 +43,7 @@ import (
 	"os/exec"
 	"sort"
 
-	"github.com/containernetworking/cni/pkg/ns"
+	"github.com/containernetworking/plugins/pkg/ns"
 	cnitypes "github.com/containernetworking/cni/pkg/types"
 	cnicurrent "github.com/containernetworking/cni/pkg/types/current"
 	"github.com/davecgh/go-spew/spew"
@@ -330,13 +330,13 @@ func ValidateAndFixCNIResult(netConfig *cnicurrent.Result, nsPath string, allLin
 		found := false
 		for i, iface := range netConfig.Interfaces {
 			if iface.Name == link.Attrs().Name {
-				ipConfig.Interface = i
+				ipConfig.Interface = &i
 				found = true
 				break
 			}
 		}
 		if !found {
-			ipConfig.Interface = len(netConfig.Interfaces)
+			*ipConfig.Interface = len(netConfig.Interfaces)
 			netConfig.Interfaces = append(netConfig.Interfaces, &cnicurrent.Interface{
 				Name:    link.Attrs().Name,
 				Mac:     link.Attrs().HardwareAddr.String(),
@@ -358,8 +358,8 @@ func getContainerLinks(info *cnicurrent.Result) ([]netlink.Link, error) {
 	var links []netlink.Link
 	order := make([]int, len(info.Interfaces))
 	for n, ip := range info.IPs {
-		if ip.Interface >= 0 && ip.Interface < len(order) {
-			order[ip.Interface] = n + 1
+		if *ip.Interface >= 0 && *ip.Interface < len(order) {
+			order[*ip.Interface] = n + 1
 		}
 	}
 	ifaces := make([]*cnicurrent.Interface, len(info.Interfaces))
@@ -430,7 +430,7 @@ func ExtractLinkInfo(link netlink.Link, nsPath string) (*cnicurrent.Result, erro
 	if len(addrs) != 1 {
 		return nil, fmt.Errorf("expected exactly one address for link, but got %v", addrs)
 	}
-
+	interfaceNum := 0
 	result := &cnicurrent.Result{
 		Interfaces: []*cnicurrent.Interface{
 			{
@@ -442,7 +442,7 @@ func ExtractLinkInfo(link netlink.Link, nsPath string) (*cnicurrent.Result, erro
 		IPs: []*cnicurrent.IPConfig{
 			{
 				Version:   "4",
-				Interface: 0,
+				Interface: &interfaceNum,
 				Address:   *addrs[0].IPNet,
 			},
 		},
@@ -744,7 +744,7 @@ func ConfigureLink(link netlink.Link, info *cnicurrent.Result) error {
 	}
 
 	for _, addr := range info.IPs {
-		if addr.Interface == ifaceNo {
+		if *addr.Interface == ifaceNo {
 			linkAddr := &netlink.Addr{IPNet: &addr.Address}
 			if err := netlink.AddrAdd(link, linkAddr); err != nil {
 				return fmt.Errorf("error adding address %v to link %q: %v", addr.Address, link.Attrs().Name, err)

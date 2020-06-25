@@ -3,11 +3,12 @@ set -o errexit
 set -o nounset
 set -o pipefail
 set -o errtrace
+set -x
 
 CRIPROXY_DEB_URL="${CRIPROXY_DEB_URL:-https://github.com/Mirantis/criproxy/releases/download/v0.14.0/criproxy-nodeps_0.14.0_amd64.deb}"
-VIRTLET_IMAGE="${VIRTLET_IMAGE:-mirantis/virtlet}"
+VIRTLET_IMAGE="${VIRTLET_IMAGE:-virtlet/virtlet}"
 VIRTLET_SKIP_RSYNC="${VIRTLET_SKIP_RSYNC:-}"
-VIRTLET_SKIP_VENDOR="${VIRTLET_SKIP_VENDOR:-false}"
+VIRTLET_SKIP_VENDOR="${VIRTLET_SKIP_VENDOR:-true}"
 VIRTLET_RSYNC_PORT="${VIRTLET_RSYNC_PORT:-18730}"
 VIRTLET_ON_MASTER="${VIRTLET_ON_MASTER:-}"
 VIRTLET_MULTI_NODE="${VIRTLET_MULTI_NODE:-}"
@@ -21,11 +22,13 @@ MKDOCS_SERVE_ADDRESS="${MKDOCS_SERVE_ADDRESS:-localhost:8042}"
 
 # Note that project_dir must not end with slash
 project_dir="$(cd "$(dirname "${BASH_SOURCE}")/.." && pwd)"
-virtlet_image="mirantis/virtlet"
 remote_project_dir="/go/src/github.com/Mirantis/virtlet"
-build_name="virtlet_build"
-tmp_container_name="${build_name}-$(openssl rand -hex 16)"
-build_image=${build_name}:latest
+
+tmp_container_name="virtlet_build_$(openssl rand -hex 16)"
+virtlet_build_image=virtlet/build
+virtlet_base_image=virtlet/base
+virtlet_build_base_image=virtlet/build_base
+
 volume_name=virtlet_src
 rsync_git=y
 exclude=(
@@ -83,47 +86,24 @@ function image_exists {
     docker history -q "${name}" >& /dev/null || return 1
 }
 
-function update_dockerfile_from {
-    local dockerfile="${1}"
-    local from_dockerfile="${2}"
-    local dest_var="${3:-}"
-    local cur_from="$(awk '/^FROM /{print $2}' "${dockerfile}")"
-    if [[ ${cur_from} =~ (^.*:.*-)([0-9a-f]) ]]; then
-        new_from="${BASH_REMATCH[1]}$(md5sum ${from_dockerfile} | sed 's/ .*//')"
-        if [[ ${new_from} != ${cur_from} ]]; then
-            sed -i "s@^FROM .*@FROM ${new_from}@" "${dockerfile}"
-        fi
-        if [[ ${dest_var} ]]; then
-            eval "${dest_var}=${new_from}"
-        fi
-    else
-        echo >&2 "*** ERROR: can't update FROM in ${dockerfile}: unexpected value: '${cur_from}'"
-        return 1
-    fi
-}
-
 function ensure_build_image {
-    update_dockerfile_from "${project_dir}/images/Dockerfile.build-base" "${project_dir}/images/Dockerfile.virtlet-base" virtlet_base_image
-    update_dockerfile_from "${project_dir}/images/Dockerfile.build" "${project_dir}/images/Dockerfile.build-base" build_base_image
-    update_dockerfile_from "${project_dir}/images/Dockerfile.virtlet" "${project_dir}/images/Dockerfile.virtlet-base"
-
-    if ! image_exists "${build_image}"; then
-        if ! image_exists "${build_base_image}"; then
+    if ! image_exists "${virtlet_build_image}"; then
+        if ! image_exists "${virtlet_build_base_image}"; then
             if ! image_exists "${virtlet_base_image}"; then
                 echo >&2 "Trying to pull the base image ${virtlet_base_image}..."
                 if ! docker pull "${virtlet_base_image}"; then
-                    docker build -t "${virtlet_base_image}" -f "${project_dir}/images/Dockerfile.virtlet-base" "${project_dir}/images"
+                    docker build -t "${virtlet_base_image}" \
+                        -f "${project_dir}/images/Dockerfile.virtlet_base" "${project_dir}/images"
                 fi
             fi
-            echo >&2 "Trying to pull the build base image ${build_base_image}..."
-            if ! docker pull "${build_base_image}"; then
-                docker build -t "${build_base_image}" \
-                       --label virtlet_image=build-base \
-                       -f "${project_dir}/images/Dockerfile.build-base" "${project_dir}/images"
+            echo >&2 "Trying to pull the build base image ${virtlet_build_base_image}..."
+            if ! docker pull "${virtlet_build_base_image}"; then
+                docker build -t "${virtlet_build_base_image}" \
+                    -f "${project_dir}/images/Dockerfile.virtlet_build_base" "${project_dir}/images"
             fi
         fi
-        tar -C "${project_dir}/images" -c image_skel/ qemu-build.conf Dockerfile.build |
-            docker build -t "${build_image}" -f Dockerfile.build -
+        tar -C "${project_dir}/images" -c image_skel/ qemu-build.conf Dockerfile.virtlet_build |
+            docker build -t "${virtlet_build_image}" -f Dockerfile.virtlet_build -
     fi
 }
 
@@ -185,7 +165,7 @@ function ensure_build_container {
                ${docker_cert_args[@]+"${docker_cert_args[@]}"} \
                --name virtlet-build \
                --tmpfs /tmp \
-               "${build_image}" \
+               "${virtlet_build_image}" \
                /bin/bash -c "mount /tmp -o remount,exec && sleep Infinity" >/dev/null
         if [[ ! ${VIRTLET_SKIP_RSYNC} ]]; then
             # from build/common.sh in k8s
@@ -311,12 +291,12 @@ function prepare_node {
             kubectl taint nodes kube-master node-role.kubernetes.io/master-
         fi
     fi
-    if [[ ${FORCE_UPDATE_IMAGE} ]] || ! docker exec "${node}" docker history -q "${virtlet_image}:latest" >&/dev/null; then
+    if [[ ${FORCE_UPDATE_IMAGE} ]] || ! docker exec "${node}" docker history -q "${VIRTLET_IMAGE}:latest" >&/dev/null; then
         echo >&2 "Propagating Virtlet image to the node container..."
         if [[ ${DIND_CRI} = containerd ]]; then
-          vcmd "docker save '${virtlet_image}:latest' | docker exec -i '${node}' ctr -n k8s.io images import -"
+          vcmd "docker save '${VIRTLET_IMAGE}:latest' | docker exec -i '${node}' ctr -n k8s.io images import -"
         else
-          vcmd "docker save '${virtlet_image}:latest' | docker exec -i '${node}' docker load"
+          vcmd "docker save '${VIRTLET_IMAGE}:latest' | docker exec -i '${node}' docker load"
         fi
     fi
 }
@@ -366,7 +346,7 @@ function clean {
     stop
     docker volume rm virtlet_src || true
     docker volume rm virtlet_pkg || true
-    docker rmi "${build_image}" || true
+    docker rmi "${virtlet_build_image}" || true
     # find command may produce zero results
     # -exec rm -rf '{}' ';' produces errors when trying to
     # enter deleted directories
@@ -396,12 +376,12 @@ function gobuild {
 function build_image_internal {
     build_internal
     tar -c _output -C "${project_dir}/images" image_skel/ Dockerfile.virtlet |
-        docker build -t "${virtlet_image}" -f Dockerfile.virtlet -
+        docker build -t "${VIRTLET_IMAGE}" -f Dockerfile.virtlet -
 }
 
 function install_vendor_internal {
     if [ ! -d vendor ]; then
-        glide install --strip-vendor
+        go mod vendor -v
     fi
 }
 
@@ -461,7 +441,7 @@ function build_internal {
     mkdir -p "${project_dir}/_output"
     go build -i -o "${project_dir}/_output/virtlet" -ldflags "${ldflags}" ./cmd/virtlet
     go build -i -o "${project_dir}/_output/virtletctl" -ldflags "${ldflags}" ./cmd/virtletctl
-    GOOS=darwin go build -i -o "${project_dir}/_output/virtletctl.darwin" -ldflags "${ldflags}" ./cmd/virtletctl
+#    GOOS=darwin go build -i -o "${project_dir}/_output/virtletctl.darwin" -ldflags "${ldflags}" ./cmd/virtletctl
     go build -i -o "${project_dir}/_output/vmwrapper" ./cmd/vmwrapper
     go build -i -o "${project_dir}/_output/flexvolume_driver" ./cmd/flexvolume_driver
     go test -i -c -o "${project_dir}/_output/virtlet-e2e-tests" ./tests/e2e

@@ -17,6 +17,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/gomega"
@@ -116,7 +117,7 @@ var _ = Describe("Container volume mounts", func() {
 					"file2": "world!",
 				},
 			}
-			_, err := controller.ConfigMaps().Create(cm)
+			_, err := controller.ConfigMaps().Create(context.TODO(), cm, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			vm = controller.VM("cm-files")
@@ -154,7 +155,7 @@ var _ = Describe("Container volume mounts", func() {
 
 		AfterAll(func() {
 			deleteVM(vm)
-			controller.ConfigMaps().Delete("files-cm", nil)
+			controller.ConfigMaps().Delete(context.TODO(), "files-cm", metav1.DeleteOptions{})
 		})
 
 		It("And files must be found on VM [Conformance]", func() {
@@ -177,7 +178,7 @@ var _ = Describe("Container volume mounts", func() {
 					"file2": "world!",
 				},
 			}
-			_, err := controller.Secrets().Create(secret)
+			_, err := controller.Secrets().Create(context.TODO(), secret, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			vm = controller.VM("secret-files")
@@ -213,7 +214,7 @@ var _ = Describe("Container volume mounts", func() {
 
 		AfterAll(func() {
 			deleteVM(vm)
-			controller.Secrets().Delete("files-secret", nil)
+			controller.Secrets().Delete(context.TODO(), "files-secret", metav1.DeleteOptions{})
 		})
 
 		It("And files must be found on VM [Conformance]", func() {

@@ -127,7 +127,7 @@ func (ds *domainSettings) createDomain(config *types.VMConfig) *libvirtxml.Domai
 		Name:   ds.domainName,
 		UUID:   ds.domainUUID,
 		Memory: &libvirtxml.DomainMemory{Value: uint(ds.memory), Unit: ds.memoryUnit},
-		VCPU:   &libvirtxml.DomainVCPU{Value: ds.vcpuNum},
+		VCPU:   &libvirtxml.DomainVCPU{Value: uint(ds.vcpuNum)},
 		CPUTune: &libvirtxml.DomainCPUTune{
 			Shares: &libvirtxml.DomainCPUTuneShares{Value: ds.cpuShares},
 			Period: &libvirtxml.DomainCPUTunePeriod{Value: ds.cpuPeriod},

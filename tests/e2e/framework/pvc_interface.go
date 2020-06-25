@@ -17,6 +17,7 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -202,12 +203,12 @@ func (pvci *PVCInterface) AddToPod(pi *PodInterface, name string) {
 
 // Create creates the PVC and its corresponding PV.
 func (pvci *PVCInterface) Create() error {
-	updatedPV, err := pvci.controller.PersistentVolumesClient().Create(pvci.Volume)
+	updatedPV, err := pvci.controller.PersistentVolumesClient().Create(context.TODO(), pvci.Volume, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
 	pvci.Volume = updatedPV
-	updatedPVC, err := pvci.controller.PersistentVolumeClaimsClient().Create(pvci.Claim)
+	updatedPVC, err := pvci.controller.PersistentVolumeClaimsClient().Create(context.TODO(), pvci.Claim, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -219,10 +220,10 @@ func (pvci *PVCInterface) Create() error {
 // It doesn't return an error if either PVC or PV doesn't exist.
 func (pvci *PVCInterface) Delete() error {
 	var errs []string
-	if err := pvci.controller.PersistentVolumeClaimsClient().Delete(pvci.Claim.Name, nil); err != nil && !k8serrors.IsNotFound(err) {
+	if err := pvci.controller.PersistentVolumeClaimsClient().Delete(context.TODO(), pvci.Claim.Name, metav1.DeleteOptions{}); err != nil && !k8serrors.IsNotFound(err) {
 		errs = append(errs, fmt.Sprintf("error deleting pvc %q: %v", pvci.Claim.Name, err))
 	}
-	if err := pvci.controller.PersistentVolumesClient().Delete(pvci.Volume.Name, nil); err != nil && !k8serrors.IsNotFound(err) {
+	if err := pvci.controller.PersistentVolumesClient().Delete(context.TODO(), pvci.Volume.Name, metav1.DeleteOptions{}); err != nil && !k8serrors.IsNotFound(err) {
 		errs = append(errs, fmt.Sprintf("error deleting pv %q: %v", pvci.Volume.Name, err))
 	}
 	if len(errs) == 0 {
@@ -247,13 +248,13 @@ func (pvci *PVCInterface) WaitForDestruction(timing ...time.Duration) error {
 	}
 
 	return waitForConsistentState(func() error {
-		switch _, err := pvci.controller.PersistentVolumeClaimsClient().Get(pvci.Claim.Name, metav1.GetOptions{}); {
+		switch _, err := pvci.controller.PersistentVolumeClaimsClient().Get(context.TODO(), pvci.Claim.Name, metav1.GetOptions{}); {
 		case err == nil:
 			return errors.New("PVC not deleted")
 		case !k8serrors.IsNotFound(err):
 			return err
 		}
-		switch _, err := pvci.controller.PersistentVolumesClient().Get(pvci.Volume.Name, metav1.GetOptions{}); {
+		switch _, err := pvci.controller.PersistentVolumesClient().Get(context.TODO(), pvci.Volume.Name, metav1.GetOptions{}); {
 		case err == nil:
 			return errors.New("PV not deleted")
 		case !k8serrors.IsNotFound(err):

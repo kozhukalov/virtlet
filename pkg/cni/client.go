@@ -17,6 +17,7 @@ limitations under the License.
 package cni
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/containernetworking/cni/libcni"
@@ -165,7 +166,7 @@ func handleAddSandboxToNetwork(arg interface{}) (interface{}, error) {
 	})
 	glog.V(3).Infof("AddSandboxToNetwork: PodID %q, PodName %q, PodNs %q, runtime config:\n%s",
 		req.PodID, req.PodName, req.PodNs, spew.Sdump(rtConf))
-	result, err := c.cniConfig.AddNetworkList(c.netConfigList, rtConf)
+	result, err := c.cniConfig.AddNetworkList(context.TODO(), c.netConfigList, rtConf)
 	if err == nil {
 		glog.V(3).Infof("AddSandboxToNetwork: PodID %q, PodName %q, PodNs %q: result:\n%s",
 			req.PodID, req.PodName, req.PodNs, spew.Sdump(result))
@@ -189,7 +190,7 @@ func handleRemoveSandboxFromNetwork(arg interface{}) (interface{}, error) {
 	}
 
 	glog.V(3).Infof("RemoveSandboxFromNetwork: PodID %q, PodName %q, PodNs %q", req.PodID, req.PodName, req.PodNs)
-	err = c.cniConfig.DelNetworkList(c.netConfigList, c.cniRuntimeConf(req.PodID, req.PodName, req.PodNs))
+	err = c.cniConfig.DelNetworkList(context.TODO(), c.netConfigList, c.cniRuntimeConf(req.PodID, req.PodName, req.PodNs))
 	if err == nil {
 		glog.V(3).Infof("RemoveSandboxFromNetwork: PodID %q, PodName %q, PodNs %q: success",
 			req.PodID, req.PodName, req.PodNs)

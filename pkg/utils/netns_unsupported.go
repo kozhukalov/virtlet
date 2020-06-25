@@ -21,7 +21,7 @@ package utils
 import (
 	"errors"
 
-	"github.com/containernetworking/cni/pkg/ns"
+	"github.com/containernetworking/plugins/pkg/ns"
 )
 
 // CallInNetNSWithSysfsRemounted is a placeholder for unsupported systems

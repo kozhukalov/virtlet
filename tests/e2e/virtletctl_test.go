@@ -64,7 +64,7 @@ var _ = Describe("virtletctl", func() {
 					"authorized_keys": SshPublicKey,
 				},
 			}
-			_, err := controller.ConfigMaps().Create(cm)
+			_, err := controller.ConfigMaps().Create(context.TODO(), cm, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			vm = controller.VM("virtletctl-test-vm")
@@ -87,7 +87,7 @@ var _ = Describe("virtletctl", func() {
 
 		AfterAll(func() {
 			deleteVM(vm)
-			controller.ConfigMaps().Delete("sshkey", nil)
+			controller.ConfigMaps().Delete(context.TODO(), "sshkey", metav1.DeleteOptions{})
 			os.Remove(tempfileName)
 		})
 

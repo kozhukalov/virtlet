@@ -247,7 +247,7 @@ func (g *CloudInitGenerator) getSubnetsForNthInterface(interfaceNo int, cniResul
 	routes := append(cniResult.Routes[:0:0], cniResult.Routes...)
 	gotDefault := false
 	for _, ipConfig := range cniResult.IPs {
-		if ipConfig.Interface == interfaceNo {
+		if *ipConfig.Interface == interfaceNo {
 			subnet := map[string]interface{}{
 				"type":    "static",
 				"address": ipConfig.Address.IP.String(),
@@ -353,7 +353,7 @@ func (g *CloudInitGenerator) generateNetworkConfigurationConfigDrive() ([]byte, 
 			// config from openstack have as network_id network uuid
 			"network_id": fmt.Sprintf("net-%d", i),
 			"type":       fmt.Sprintf("ipv%s", ipConfig.Version),
-			"link":       cniResult.Interfaces[ipConfig.Interface].Name,
+			"link":       cniResult.Interfaces[*ipConfig.Interface].Name,
 			"ip_address": ipConfig.Address.IP.String(),
 			"netmask":    net.IP(ipConfig.Address.Mask).String(),
 		}

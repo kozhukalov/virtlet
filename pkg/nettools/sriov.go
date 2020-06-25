@@ -41,7 +41,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/containernetworking/cni/pkg/ns"
+	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/golang/glog"
 	"github.com/vishvananda/netlink"
 

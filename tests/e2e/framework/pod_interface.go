@@ -18,6 +18,7 @@ package framework
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -58,7 +59,7 @@ func newPodInterface(controller *Controller, pod *v1.Pod) *PodInterface {
 
 // Create creates pod in the k8s
 func (pi *PodInterface) Create() error {
-	updatedPod, err := pi.controller.client.Pods(pi.controller.Namespace()).Create(pi.Pod)
+	updatedPod, err := pi.controller.client.Pods(pi.controller.Namespace()).Create(context.TODO(), pi.Pod, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -69,9 +70,9 @@ func (pi *PodInterface) Create() error {
 // Delete deletes the pod and associated service, which was earlier created by `controller.Run()`
 func (pi *PodInterface) Delete() error {
 	if pi.hasService {
-		pi.controller.client.Services(pi.Pod.Namespace).Delete(pi.Pod.Name, nil)
+		pi.controller.client.Services(pi.Pod.Namespace).Delete(context.TODO(), pi.Pod.Name, metav1.DeleteOptions{})
 	}
-	return pi.controller.client.Pods(pi.Pod.Namespace).Delete(pi.Pod.Name, nil)
+	return pi.controller.client.Pods(pi.Pod.Namespace).Delete(context.TODO(), pi.Pod.Name, metav1.DeleteOptions{})
 }
 
 // WaitForPodStatus waits for the pod to reach the specified status. If expectedContainerErrors
@@ -92,7 +93,7 @@ func (pi *PodInterface) WaitForPodStatus(expectedContainerErrors []string, timin
 	}
 
 	return waitForConsistentState(func() error {
-		podUpdated, err := pi.controller.client.Pods(pi.Pod.Namespace).Get(pi.Pod.Name, metav1.GetOptions{})
+		podUpdated, err := pi.controller.client.Pods(pi.Pod.Namespace).Get(context.TODO(), pi.Pod.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -153,7 +154,7 @@ func (pi *PodInterface) WaitForDestruction(timing ...time.Duration) error {
 	}
 
 	return waitForConsistentState(func() error {
-		if _, err := pi.controller.client.Pods(pi.Pod.Namespace).Get(pi.Pod.Name, metav1.GetOptions{}); err != nil {
+		if _, err := pi.controller.client.Pods(pi.Pod.Namespace).Get(context.TODO(), pi.Pod.Name, metav1.GetOptions{}); err != nil {
 			if k8serrors.IsNotFound(err) {
 				return nil
 			}
@@ -335,7 +336,7 @@ func (ci *containerInterface) Logs() (string, error) {
 	req.VersionedParams(&v1.PodLogOptions{
 		Container: ci.name,
 	}, scheme.ParameterCodec)
-	stream, err := req.Stream()
+	stream, err := req.Stream(context.TODO())
 	if err != nil {
 		return "", err
 	}

@@ -17,6 +17,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -311,7 +312,7 @@ func withCeph(monitorIP, secret *string, kubeSecret string) {
 			// decoder := base64.NewDecoder(base64.StdEncoding, buf)
 			// decoded, err := ioutil.ReadAll(decoder)
 			// Expect(err).NotTo(HaveOccurred())
-			_, err = controller.Secrets().Create(&v1.Secret{
+			_, err = controller.Secrets().Create(context.TODO(), &v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: kubeSecret,
 				},
@@ -319,7 +320,7 @@ func withCeph(monitorIP, secret *string, kubeSecret string) {
 				Data: map[string][]byte{
 					"key": []byte(out),
 				},
-			})
+			}, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}
 	})
@@ -329,9 +330,9 @@ func withCeph(monitorIP, secret *string, kubeSecret string) {
 		Expect(err).NotTo(HaveOccurred())
 		container.Delete()
 		if kubeSecret != "" {
-			Expect(controller.Secrets().Delete(kubeSecret, nil)).To(Succeed())
+			Expect(controller.Secrets().Delete(context.TODO(), kubeSecret, metav1.DeleteOptions{})).To(Succeed())
 			Eventually(func() error {
-				if _, err := controller.Secrets().Get(kubeSecret, metav1.GetOptions{}); err != nil {
+				if _, err := controller.Secrets().Get(context.TODO(), kubeSecret, metav1.GetOptions{}); err != nil {
 					if k8serrors.IsNotFound(err) {
 						return nil
 					}

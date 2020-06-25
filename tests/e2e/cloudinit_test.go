@@ -17,6 +17,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/gomega"
@@ -40,7 +41,7 @@ var _ = Describe("Cloud-init related tests", func() {
 					"authorized_keys": SshPublicKey,
 				},
 			}
-			_, err := controller.ConfigMaps().Create(cm)
+			_, err := controller.ConfigMaps().Create(context.TODO(), cm, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			vm = controller.VM("ssh-from-cm-impl")
@@ -51,7 +52,7 @@ var _ = Describe("Cloud-init related tests", func() {
 
 		AfterAll(func() {
 			deleteVM(vm)
-			controller.ConfigMaps().Delete("cm-ssh-key-impl", nil)
+			controller.ConfigMaps().Delete(context.TODO(), "cm-ssh-key-impl", metav1.DeleteOptions{})
 		})
 
 		It("Should have SSH accessible [Conformance]", func() {
@@ -71,7 +72,7 @@ var _ = Describe("Cloud-init related tests", func() {
 					"myKey": SshPublicKey,
 				},
 			}
-			_, err := controller.ConfigMaps().Create(cm)
+			_, err := controller.ConfigMaps().Create(context.TODO(), cm, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			vm = controller.VM("ssh-from-cm-expl")
@@ -82,7 +83,7 @@ var _ = Describe("Cloud-init related tests", func() {
 
 		AfterAll(func() {
 			deleteVM(vm)
-			controller.ConfigMaps().Delete("cm-ssh-key-expl", nil)
+			controller.ConfigMaps().Delete(context.TODO(), "cm-ssh-key-expl", metav1.DeleteOptions{})
 		})
 
 		It("Should have SSH accessible [Conformance]", func() {
@@ -102,7 +103,7 @@ var _ = Describe("Cloud-init related tests", func() {
 					"authorized_keys": SshPublicKey,
 				},
 			}
-			_, err := controller.Secrets().Create(secret)
+			_, err := controller.Secrets().Create(context.TODO(), secret, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			vm = controller.VM("ssh-from-secret-impl")
@@ -113,7 +114,7 @@ var _ = Describe("Cloud-init related tests", func() {
 
 		AfterAll(func() {
 			deleteVM(vm)
-			controller.Secrets().Delete("secret-ssh-key-impl", nil)
+			controller.Secrets().Delete(context.TODO(), "secret-ssh-key-impl", metav1.DeleteOptions{})
 		})
 
 		It("Should have SSH accessible [Conformance]", func() {
@@ -133,7 +134,7 @@ var _ = Describe("Cloud-init related tests", func() {
 					"myKey": SshPublicKey,
 				},
 			}
-			_, err := controller.Secrets().Create(secret)
+			_, err := controller.Secrets().Create(context.TODO(), secret, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			vm = controller.VM("ssh-from-secret-expl")
@@ -144,7 +145,7 @@ var _ = Describe("Cloud-init related tests", func() {
 
 		AfterAll(func() {
 			deleteVM(vm)
-			controller.Secrets().Delete("secret-ssh-key-expl", nil)
+			controller.Secrets().Delete(context.TODO(), "secret-ssh-key-expl", metav1.DeleteOptions{})
 		})
 
 		It("Should have SSH accessible [Conformance]", func() {
@@ -167,7 +168,7 @@ var _ = Describe("Cloud-init related tests", func() {
 					"write_files": fileConf,
 				},
 			}
-			_, err := controller.ConfigMaps().Create(cm)
+			_, err := controller.ConfigMaps().Create(context.TODO(), cm, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			vm = controller.VM("userdata-cm")
@@ -178,7 +179,7 @@ var _ = Describe("Cloud-init related tests", func() {
 
 		AfterAll(func() {
 			deleteVM(vm)
-			controller.ConfigMaps().Delete("cm-userdata", nil)
+			controller.ConfigMaps().Delete(context.TODO(), "cm-userdata", metav1.DeleteOptions{})
 		})
 
 		It("Must be processed [Conformance]", func() {
@@ -202,7 +203,7 @@ var _ = Describe("Cloud-init related tests", func() {
 					"write_files": fileConf,
 				},
 			}
-			_, err := controller.Secrets().Create(secret)
+			_, err := controller.Secrets().Create(context.TODO(), secret, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			vm = controller.VM("userdata-secret")
@@ -213,7 +214,7 @@ var _ = Describe("Cloud-init related tests", func() {
 
 		AfterAll(func() {
 			deleteVM(vm)
-			controller.Secrets().Delete("secret-userdata", nil)
+			controller.Secrets().Delete(context.TODO(), "secret-userdata", metav1.DeleteOptions{})
 		})
 
 		It("Must be processed [Conformance]", func() {
@@ -238,7 +239,7 @@ var _ = Describe("Cloud-init related tests", func() {
 					"write_files": fileConf,
 				},
 			}
-			_, err := controller.ConfigMaps().Create(cm)
+			_, err := controller.ConfigMaps().Create(context.TODO(), cm, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			vm = controller.VM("userdata-cm-merge")
@@ -250,7 +251,7 @@ var _ = Describe("Cloud-init related tests", func() {
 
 		AfterAll(func() {
 			deleteVM(vm)
-			controller.ConfigMaps().Delete("cm-userdata", nil)
+			controller.ConfigMaps().Delete(context.TODO(), "cm-userdata", metav1.DeleteOptions{})
 		})
 
 		It("Must be processed [Conformance]", func() {

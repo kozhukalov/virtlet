@@ -17,6 +17,7 @@ limitations under the License.
 package libvirttools
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"strings"
@@ -143,7 +144,7 @@ func (l *defaultExternalDataLoader) readK8sKeySource(sourceType, sourceName, nam
 	sourceType = strings.ToLower(sourceType)
 	switch sourceType {
 	case "secret":
-		secret, err := l.kubeClient.CoreV1().Secrets(namespace).Get(sourceName, meta_v1.GetOptions{})
+		secret, err := l.kubeClient.CoreV1().Secrets(namespace).Get(context.TODO(), sourceName, meta_v1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -156,7 +157,7 @@ func (l *defaultExternalDataLoader) readK8sKeySource(sourceType, sourceName, nam
 		}
 		return result, nil
 	case "configmap":
-		configmap, err := l.kubeClient.CoreV1().ConfigMaps(namespace).Get(sourceName, meta_v1.GetOptions{})
+		configmap, err := l.kubeClient.CoreV1().ConfigMaps(namespace).Get(context.TODO(), sourceName, meta_v1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}

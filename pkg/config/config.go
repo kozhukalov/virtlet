@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"sort"
@@ -265,7 +266,7 @@ func (nc *NodeConfig) LoadConfig(localConfig *virtlet_v1.VirtletConfig, nodeName
 		return nil, err
 	}
 
-	node, err := nc.kubeClient.CoreV1().Nodes().Get(nodeName, meta_v1.GetOptions{})
+	node, err := nc.kubeClient.CoreV1().Nodes().Get(context.TODO(), nodeName, meta_v1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("can't get node info for node %q: %v", nodeName, err)
 	}

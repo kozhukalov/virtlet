@@ -38,7 +38,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/containernetworking/cni/pkg/ns"
+	"github.com/containernetworking/plugins/pkg/ns"
 	cnitypes "github.com/containernetworking/cni/pkg/types"
 	cnicurrent "github.com/containernetworking/cni/pkg/types/current"
 	"github.com/golang/glog"
@@ -78,7 +78,7 @@ func getLinkForIPConfig(netConfig *cnicurrent.Result, ipConfigIndex int) (netlin
 	}
 
 	ipConfig := netConfig.IPs[ipConfigIndex]
-	if ipConfig.Interface >= len(netConfig.Interfaces) {
+	if *ipConfig.Interface >= len(netConfig.Interfaces) {
 		return nil, errors.New("interface index out of range in the CNI result")
 	}
 
@@ -86,7 +86,7 @@ func getLinkForIPConfig(netConfig *cnicurrent.Result, ipConfigIndex int) (netlin
 		return nil, errors.New("skipping non-IPv4 config")
 	}
 
-	iface := netConfig.Interfaces[ipConfig.Interface]
+	iface := netConfig.Interfaces[*ipConfig.Interface]
 	if iface.Sandbox == "" {
 		return nil, errors.New("error: IP config has non-sandboxed interface")
 	}

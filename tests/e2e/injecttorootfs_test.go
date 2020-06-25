@@ -17,6 +17,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/gomega"
@@ -70,10 +71,10 @@ var _ = Describe("Injecting files into rootfs", func() {
 			},
 			Data: testData,
 		}
-		_, err := controller.ConfigMaps().Create(cm)
+		_, err := controller.ConfigMaps().Create(context.TODO(), cm, metav1.CreateOptions{})
 		return err
 	}, func() error {
-		return controller.ConfigMaps().Delete("files", nil)
+		return controller.ConfigMaps().Delete(context.TODO(), "files", metav1.DeleteOptions{})
 	})
 
 	describeInjectingFiles("Secret", "secret/files", "rootfs-secret", func() error {
@@ -83,9 +84,9 @@ var _ = Describe("Injecting files into rootfs", func() {
 			},
 			StringData: testData,
 		}
-		_, err := controller.Secrets().Create(secret)
+		_, err := controller.Secrets().Create(context.TODO(), secret, metav1.CreateOptions{})
 		return err
 	}, func() error {
-		return controller.Secrets().Delete("files", nil)
+		return controller.Secrets().Delete(context.TODO(), "files", metav1.DeleteOptions{})
 	})
 })

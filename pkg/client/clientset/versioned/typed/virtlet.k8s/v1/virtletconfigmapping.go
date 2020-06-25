@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 import (
+	"context"
 	v1 "github.com/Mirantis/virtlet/pkg/api/virtlet.k8s/v1"
 	scheme "github.com/Mirantis/virtlet/pkg/client/clientset/versioned/scheme"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,7 +69,7 @@ func (c *virtletConfigMappings) Get(name string, options meta_v1.GetOptions) (re
 		Resource("virtletconfigmappings").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -80,7 +81,7 @@ func (c *virtletConfigMappings) List(opts meta_v1.ListOptions) (result *v1.Virtl
 		Namespace(c.ns).
 		Resource("virtletconfigmappings").
 		VersionedParams(&opts, scheme.ParameterCodec).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -92,7 +93,7 @@ func (c *virtletConfigMappings) Watch(opts meta_v1.ListOptions) (watch.Interface
 		Namespace(c.ns).
 		Resource("virtletconfigmappings").
 		VersionedParams(&opts, scheme.ParameterCodec).
-		Watch()
+		Watch(context.TODO())
 }
 
 // Create takes the representation of a virtletConfigMapping and creates it.  Returns the server's representation of the virtletConfigMapping, and an error, if there is any.
@@ -102,7 +103,7 @@ func (c *virtletConfigMappings) Create(virtletConfigMapping *v1.VirtletConfigMap
 		Namespace(c.ns).
 		Resource("virtletconfigmappings").
 		Body(virtletConfigMapping).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -115,7 +116,7 @@ func (c *virtletConfigMappings) Update(virtletConfigMapping *v1.VirtletConfigMap
 		Resource("virtletconfigmappings").
 		Name(virtletConfigMapping.Name).
 		Body(virtletConfigMapping).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -127,7 +128,7 @@ func (c *virtletConfigMappings) Delete(name string, options *meta_v1.DeleteOptio
 		Resource("virtletconfigmappings").
 		Name(name).
 		Body(options).
-		Do().
+		Do(context.TODO()).
 		Error()
 }
 
@@ -138,7 +139,7 @@ func (c *virtletConfigMappings) DeleteCollection(options *meta_v1.DeleteOptions,
 		Resource("virtletconfigmappings").
 		VersionedParams(&listOptions, scheme.ParameterCodec).
 		Body(options).
-		Do().
+		Do(context.TODO()).
 		Error()
 }
 
@@ -151,7 +152,7 @@ func (c *virtletConfigMappings) Patch(name string, pt types.PatchType, data []by
 		SubResource(subresources...).
 		Name(name).
 		Body(data).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }

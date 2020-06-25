@@ -34,6 +34,7 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -112,7 +113,7 @@ func NewController(namespace string) (*Controller, error) {
 
 	var ns *v1.Namespace
 	if namespace != "" {
-		ns, err = clientset.Namespaces().Get(namespace, metav1.GetOptions{})
+		ns, err = clientset.Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
 	} else {
 		ns, err = createNamespace(clientset)
 	}
@@ -136,7 +137,7 @@ func createNamespace(client *typedv1.CoreV1Client) (*v1.Namespace, error) {
 		},
 		Status: v1.NamespaceStatus{},
 	}
-	return client.Namespaces().Create(namespaceObj)
+	return client.Namespaces().Create(context.TODO(), namespaceObj, metav1.CreateOptions{})
 }
 
 // Finalize deletes random namespace that might has been created by NewController
@@ -144,7 +145,7 @@ func (c *Controller) Finalize() error {
 	if c.fixedNs {
 		return nil
 	}
-	return c.client.Namespaces().Delete(c.namespace.Name, nil)
+	return c.client.Namespaces().Delete(context.TODO(), c.namespace.Name, metav1.DeleteOptions{})
 }
 
 func (c *Controller) CreateVirtletImageMapping(mapping virtlet_v1.VirtletImageMapping) (*virtlet_v1.VirtletImageMapping, error) {
@@ -194,7 +195,7 @@ func (c *Controller) Pod(name, namespace string) (*PodInterface, error) {
 	if namespace == "" {
 		namespace = c.namespace.Name
 	}
-	pod, err := c.client.Pods(namespace).Get(name, metav1.GetOptions{})
+	pod, err := c.client.Pods(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +209,7 @@ func (c *Controller) FindPod(namespace string, labelMap map[string]string,
 	if namespace == "" {
 		namespace = c.namespace.Name
 	}
-	lst, err := c.client.Pods(namespace).List(metav1.ListOptions{LabelSelector: labels.SelectorFromSet(labelMap).String()})
+	lst, err := c.client.Pods(namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: labels.SelectorFromSet(labelMap).String()})
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +251,7 @@ func (c *Controller) AvailableNodeName() (string, error) {
 		return "", err
 	}
 
-	nodeList, err := c.client.Nodes().List(metav1.ListOptions{})
+	nodeList, err := c.client.Nodes().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -278,7 +279,7 @@ func (c *Controller) AddLabelsToNode(nodeName string, labels map[string]string) 
 	patch := fmt.Sprintf(`{"metadata":{"labels":%v}}`, labelString)
 	var err error
 	for attempt := 0; attempt < retries; attempt++ {
-		_, err = c.client.Nodes().Patch(nodeName, types.MergePatchType, []byte(patch))
+		_, err = c.client.Nodes().Patch(context.TODO(), nodeName, types.MergePatchType, []byte(patch), metav1.PatchOptions{})
 		if err != nil {
 			if !apierrs.IsConflict(err) {
 				return err
@@ -298,7 +299,7 @@ func (c *Controller) RemoveLabelOffNode(nodeName string, labelKeys []string) err
 	var node *v1.Node
 	var err error
 	for attempt := 0; attempt < retries; attempt++ {
-		node, err = c.client.Nodes().Get(nodeName, metav1.GetOptions{})
+		node, err = c.client.Nodes().Get(context.TODO(), nodeName, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -311,7 +312,7 @@ func (c *Controller) RemoveLabelOffNode(nodeName string, labelKeys []string) err
 			}
 			delete(node.Labels, labelKey)
 		}
-		_, err = c.client.Nodes().Update(node)
+		_, err = c.client.Nodes().Update(context.TODO(), node, metav1.UpdateOptions{})
 		if err != nil {
 			if !apierrs.IsConflict(err) {
 				return err
@@ -413,7 +414,7 @@ func (c *Controller) RunPod(name, image string, opts RunPodOptions) (*PodInterfa
 				Port: port,
 			})
 		}
-		_, err := c.client.Services(c.namespace.Name).Create(svc)
+		_, err := c.client.Services(c.namespace.Name).Create(context.TODO(), svc, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}

@@ -78,7 +78,7 @@ func (d *DockerContainerInterface) Run(image string, env map[string]string, netw
 	if err != nil {
 		return err
 	}
-	if err := d.client.ContainerStart(ctx, resp.ID); err != nil {
+	if err := d.client.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		return err
 	}
 	d.ID = resp.ID

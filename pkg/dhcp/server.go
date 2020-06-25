@@ -171,7 +171,7 @@ func (s *Server) prepareResponse(pkt *dhcp4.Packet, serverIP net.IP, mt dhcp4.Me
 
 	var cfg *cnicurrent.IPConfig
 	for _, curCfg := range s.config.Result.IPs {
-		if curCfg.Version == "4" && curCfg.Interface == interfaceNo {
+		if curCfg.Version == "4" && *curCfg.Interface == interfaceNo {
 			cfg = curCfg
 		}
 	}
